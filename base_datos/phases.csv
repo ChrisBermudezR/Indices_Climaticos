@@ -1,0 +1,6 @@
+id,phase,phase_description,id_event
+1,Fría,Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C,1
+2,Neutra,Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C,2
+3,Fría,Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C,2
+4,Cálida,Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C,3
+5,Cálida,Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C,2
