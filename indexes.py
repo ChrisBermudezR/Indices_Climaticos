@@ -51,7 +51,7 @@ Fecha de creación:
 """
 
 import pandas as pd
-from eventClassifier import Classifier, columnEvaluation
+from eventClassifier import Classifier, columnEvaluation, meiClassifier
 
 
 """
@@ -172,6 +172,220 @@ def meiIndex(df):
     df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque el valor de la media movil bimensual del primer compoennte principal es inferior a -0.5 °C' 
                                                     if x == 'Fría' else ('Esta fase se caracteriza porque el valor de la media movil bimensual del primer compoennte principal es superior a 0.5 °C' 
                                                                       if x == 'Cálida'  else 'Esta fase se caracteriza porque el valor de la media movil bimensual del primer compoennte principal es inferior a 0.5 °C y superior a -0.5 °C'))
+
+    # Identificar eventos
+    event_total = meiClassifier(df_long, 5, -0.5, 0.5) # entradas de la función para el evenClassifier
+
+    # Unir los eventos con el DataFrame original
+    df_long = pd.merge(df_long, event_total, on='date')
+
+    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque la fase fría persiste durante al menos 5 meses consecutivos' 
+                                                    if x == 'Niña' else ('Este evento se caracteriza porque la fase cálida persiste durante al menos 5 meses consecutivos' 
+                                                                         if x == 'Niño' else 'Condiciones neutras'))
+    
+    df_long = columnEvaluation(df_long, 'event', 'value', 'type')
+   
+
+    return df_long
+
+"""
+ÍNDICE NIÑO 1+2
+
+Niño 1+2 Index: From NOAA Climate Prediction Center (CPC)
+Extreme Eastern Tropical Pacific SST (0-10S, 90W-80W)
+CPC uses the NOAA ERSST V5 anomalies. 
+Now uses https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii. 
+Mean values also available.  
+
+"""
+
+def nino12Index(df):
+    # Transformar el DataFrame
+    df_long = df.melt(id_vars=['year'], var_name='month', value_name='value')
+    df_long['year'] = df_long['year'].astype(str)
+    #initial_line = pd.DataFrame({'year': ['1949'], 'month': ['12'], 'value': [-0.5]})
+    #df_long = pd.concat([initial_line, df_long], ignore_index=True)
+
+    df_long['day'] = 1
+    df_long['day'] = df_long['day'].astype(str)
+
+    df_long = df_long[df_long['value'] != -99.9]
+    df_long['value'] = df_long['value'].round(1)
+
+    df_long['date'] = pd.to_datetime(df_long[['year', 'month', 'day']])
+    df_long['date'] = df_long['date'].dt.strftime('%Y-%m-%d')
+    df_long = df_long[['date', 'value']]
+    df_long = df_long.sort_values(by='date')
+    df_long['date'] = pd.to_datetime(df_long['date'])
+
+    df_long['index_name'] = 'Niño 1+2'
+    df_long['index_description'] = 'Índice Niño 1+2: representa las anomalías mensuales de la temperatura superficial del mar (TSM) en la región más oriental del Pacífico ecuatorial, delimitada entre los 0°–10°S y 80°W–90°W, frente a las costas de Perú y Ecuador. Calculada a partir del ERSST V5 (en NOAA/CPC).'
+    df_long['unit'] = '°C'
+
+    # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
+    df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C' 
+                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C' 
+                                                                      if x == 'Cálida'  else 'Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C'))
+
+    # Identificar eventos
+    event_total = Classifier(df_long, 5, -0.5, 0.5) # entradas de la función para el evenClassifier
+
+    # Unir los eventos con el DataFrame original
+    df_long = pd.merge(df_long, event_total, on='date')
+
+    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque la fase fría persiste durante al menos 5 meses consecutivos' 
+                                                    if x == 'Niña' else ('Este evento se caracteriza porque la fase cálida persiste durante al menos 5 meses consecutivos' 
+                                                                         if x == 'Niño' else 'Condiciones neutras'))
+    
+    df_long = columnEvaluation(df_long, 'event', 'value', 'type')
+   
+
+    return df_long
+
+
+"""
+ÍNDICE NIÑO 3
+
+Niño 3 Index: From NOAA Climate Prediction Center (CPC)
+Eastern Tropical Pacific SST (5N-5S,150W-90W): From NOAA Climate Prediction Center(CPC)
+CPC uses the NOAA ERSST V5 anomalies. Now uses https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii. Mean values also available.   
+
+"""
+
+def nino3Index(df):
+    # Transformar el DataFrame
+    df_long = df.melt(id_vars=['year'], var_name='month', value_name='value')
+    df_long['year'] = df_long['year'].astype(str)
+    #initial_line = pd.DataFrame({'year': ['1949'], 'month': ['12'], 'value': [-0.5]})
+    #df_long = pd.concat([initial_line, df_long], ignore_index=True)
+
+    df_long['day'] = 1
+    df_long['day'] = df_long['day'].astype(str)
+
+    df_long = df_long[df_long['value'] != -99.9]
+    df_long['value'] = df_long['value'].round(1)
+
+    df_long['date'] = pd.to_datetime(df_long[['year', 'month', 'day']])
+    df_long['date'] = df_long['date'].dt.strftime('%Y-%m-%d')
+    df_long = df_long[['date', 'value']]
+    df_long = df_long.sort_values(by='date')
+    df_long['date'] = pd.to_datetime(df_long['date'])
+
+    df_long['index_name'] = 'Niño 3'
+    df_long['index_description'] = 'Índice Niño 3: El índice Niño 3 corresponde a las anomalías mensuales de la temperatura superficial del mar (TSM) en la región del Pacífico ecuatorial comprendida entre los 5°N–5°S y 90°W–150°W. Calculada a partir del ERSST V5 (en NOAA/CPC).'
+    df_long['unit'] = '°C'
+
+    # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
+    df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C' 
+                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C' 
+                                                                      if x == 'Cálida'  else 'Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C'))
+
+    # Identificar eventos
+    event_total = Classifier(df_long, 5, -0.5, 0.5) # entradas de la función para el evenClassifier
+
+    # Unir los eventos con el DataFrame original
+    df_long = pd.merge(df_long, event_total, on='date')
+
+    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque la fase fría persiste durante al menos 5 meses consecutivos' 
+                                                    if x == 'Niña' else ('Este evento se caracteriza porque la fase cálida persiste durante al menos 5 meses consecutivos' 
+                                                                         if x == 'Niño' else 'Condiciones neutras'))
+    
+    df_long = columnEvaluation(df_long, 'event', 'value', 'type')
+   
+
+    return df_long
+
+
+"""
+ÍNDICE NIÑO 3.4
+
+Niño 3 Index: From NOAA Climate Prediction Center (CPC)
+East Central Tropical Pacific SST (5N-5S)(170-120W): From CPC
+CPC uses the NOAA ERSST V5 anomalies. Now uses https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii. Mean values also available. 
+"""
+
+def nino34Index(df):
+    # Transformar el DataFrame
+    df_long = df.melt(id_vars=['year'], var_name='month', value_name='value')
+    df_long['year'] = df_long['year'].astype(str)
+    #initial_line = pd.DataFrame({'year': ['1949'], 'month': ['12'], 'value': [-0.5]})
+    #df_long = pd.concat([initial_line, df_long], ignore_index=True)
+
+    df_long['day'] = 1
+    df_long['day'] = df_long['day'].astype(str)
+
+    df_long = df_long[df_long['value'] != -99.9]
+    df_long['value'] = df_long['value'].round(1)
+
+    df_long['date'] = pd.to_datetime(df_long[['year', 'month', 'day']])
+    df_long['date'] = df_long['date'].dt.strftime('%Y-%m-%d')
+    df_long = df_long[['date', 'value']]
+    df_long = df_long.sort_values(by='date')
+    df_long['date'] = pd.to_datetime(df_long['date'])
+
+    df_long['index_name'] = 'Niño 3.4'
+    df_long['index_description'] = 'Índice Niño 3.4: El índice Niño 3.4 mide las anomalías mensuales de la temperatura superficial del mar (TSM) en la región comprendida entre los 5°N–5°S y 120°W–170°W del Pacífico central ecuatorial. Calculada a partir del ERSST V5 (en NOAA/CPC).'
+    df_long['unit'] = '°C'
+
+    # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
+    df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C' 
+                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C' 
+                                                                      if x == 'Cálida'  else 'Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C'))
+
+    # Identificar eventos
+    event_total = Classifier(df_long, 5, -0.5, 0.5) # entradas de la función para el evenClassifier
+
+    # Unir los eventos con el DataFrame original
+    df_long = pd.merge(df_long, event_total, on='date')
+
+    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque la fase fría persiste durante al menos 5 meses consecutivos' 
+                                                    if x == 'Niña' else ('Este evento se caracteriza porque la fase cálida persiste durante al menos 5 meses consecutivos' 
+                                                                         if x == 'Niño' else 'Condiciones neutras'))
+    
+    df_long = columnEvaluation(df_long, 'event', 'value', 'type')
+   
+
+    return df_long
+
+"""
+ÍNDICE NIÑO 4
+
+Central Tropical Pacific SST (5N-5S) (160E-150W): From CPC
+CPC uses the NOAA ERSST V5 anomalies. Now uses https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii. Mean values also available. 
+
+"""
+
+def nino4Index(df):
+    # Transformar el DataFrame
+    df_long = df.melt(id_vars=['year'], var_name='month', value_name='value')
+    df_long['year'] = df_long['year'].astype(str)
+    #initial_line = pd.DataFrame({'year': ['1949'], 'month': ['12'], 'value': [-0.5]})
+    #df_long = pd.concat([initial_line, df_long], ignore_index=True)
+
+    df_long['day'] = 1
+    df_long['day'] = df_long['day'].astype(str)
+
+    df_long = df_long[df_long['value'] != -99.9]
+    df_long['value'] = df_long['value'].round(1)
+
+    df_long['date'] = pd.to_datetime(df_long[['year', 'month', 'day']])
+    df_long['date'] = df_long['date'].dt.strftime('%Y-%m-%d')
+    df_long = df_long[['date', 'value']]
+    df_long = df_long.sort_values(by='date')
+    df_long['date'] = pd.to_datetime(df_long['date'])
+
+    df_long['index_name'] = 'Niño 4'
+    df_long['index_description'] = 'Índice Niño 4: El índice Niño 4 representa las anomalías mensuales de la temperatura superficial del mar (TSM) en la región del Pacífico ecuatorial occidental, delimitada entre los 5°N–5°S y 160°E–150°W. Calculada a partir del ERSST V5 (en NOAA/CPC).'
+    df_long['unit'] = '°C'
+
+    # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
+    df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C' 
+                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C' 
+                                                                      if x == 'Cálida'  else 'Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C'))
 
     # Identificar eventos
     event_total = Classifier(df_long, 5, -0.5, 0.5) # entradas de la función para el evenClassifier
