@@ -177,46 +177,124 @@ def columnEvaluation(df, col1, col2, nueva_col):
 
     return df
 
-def meiClassifier(data, condicion, umbral_inferior, umbral_superior):
+def MEIClassifier(data):
+    """
+    Clasifica eventos climáticos (El Niño, La Niña y Neutro) basados en el índice MEI.
+
+    Args:
+        data (pd.DataFrame): DataFrame con las columnas 'date' (fechas) y 'value' (índices MEI).
+        condicion (int): Número mínimo de meses consecutivos para definir un evento.
+        umbral_inferior (float): Umbral inferior para La Niña.
+        umbral_superior (float): Umbral superior para El Niño.
+
+    Returns:
+        pd.DataFrame: DataFrame con eventos clasificados por fecha y tipo ('Niño', 'Niña', 'Neutro').
+    """
+    
+    data['event'] = data['value'].apply(lambda x: 'Niña' if x <= -0.5 else ('Niño' if x >= 0.5 else 'Neutro'))
+    
+    data['event'] = data['event'].astype('category')   
+     
+    return data
+
+
+
+def IMTClassifier(x):
+   
+    # Determinar intensidad (C5, F1, etc.)
+    if x >= 4:
+        intensidad = 'C5'
+    elif 3 <= x < 4:
+        intensidad = 'C4'
+    elif 2 <= x < 3:
+        intensidad = 'C3'
+    elif 1 <= x < 2:
+        intensidad = 'C2'
+    elif 0 <= x < 1:
+        intensidad = 'C1'
+    elif -1 <= x < 0:
+        intensidad = 'F1'
+    elif -2 <= x < -1:
+        intensidad = 'F2'
+    elif -3 <= x < -2:
+        intensidad = 'F3'
+    elif -4 <= x < -3:
+        intensidad = 'F4'
+    elif x <= -4:
+        intensidad = 'F5'
+    else:
+        intensidad = 'Desconocido'
+
+    # Mapear intensidad a fase descriptiva
+    fase_descripcion = {
+        'C5': 'Fase cálida muy fuerte',
+        'C4': 'Fase cálida muy fuerte',
+        'C3': 'Fase cálida fuerte',
+        'C2': 'Fase cálida moderada',
+        'C1': 'Fase cálida neutra',
+        'F1': 'Fase fría neutra',
+        'F2': 'Fase fría moderada',
+        'F3': 'Fase fría fuerte',
+        'F4': 'Fase fría muy fuerte',
+        'F5': 'Fase fría muy fuerte'
+    }.get(intensidad, 'Fase desconocida')
+
+    return {
+        'intensidad': intensidad,
+        'fase': fase_descripcion
+    }
+
+def SOIClassifier(data, condicion, umbral_inferior, umbral_superior):
+   
+   
+    anio_inicio = 1951
+    anio_fin = data['date'].iloc[-1].year
+    final_month = data['date'].iloc[-1].month
+    total_meses = pd.date_range(start=f'{anio_inicio}-01-01', end=f'{anio_fin}-{final_month}-01', freq='MS')
+    vector_index = np.array(data['value']).flatten()
+    vector_index = vector_index[:len(total_meses)]
+    
+    # Identificar periodos El Niño
+    pos_nino = np.where(vector_index <= umbral_inferior)[0]
+    D = np.diff(np.concatenate(([0], np.diff(pos_nino) == 1, [0])))
+    pos_partida = np.where(D == 1)[0]
+    pos_llegada = np.where(D == -1)[0]+1
+    posiciones = np.vstack((pos_partida, pos_llegada))
+    resultado = np.diff(posiciones, axis=0)
+    posiciones_nino = np.where(resultado >= condicion)[1]
+    meses_nino = []
+
+    for i in posiciones_nino:
+        periodos = pos_nino[pos_partida[i]:pos_llegada[i]]
+        meses_nino.extend(total_meses[periodos])
         
-        """
-        Clasifica eventos climáticos (El Niño, La Niña y Neutro) basados en el índice MEI.
-    
-        Args:
-            data (pd.DataFrame): DataFrame con las columnas 'date' (fechas) y 'value' (índices MEI).
-            condicion (int): Número mínimo de meses consecutivos para definir un evento.
-            umbral_inferior (float): Umbral inferior para La Niña.
-            umbral_superior (float): Umbral superior para El Niño.
-    
-        Returns:
-            pd.DataFrame: DataFrame con eventos clasificados por fecha y tipo ('Niño', 'Niña', 'Neutro').
-        """
-    
-        anio_inicio = 1950
-        anio_fin = data['date'].iloc[-1].year
-        final_month = data['date'].iloc[-1].month
-        total_meses = pd.date_range(start=f'{anio_inicio}-01-01', end=f'{anio_fin}-{final_month}-01', freq='MS')
-        vector_index = np.array(data['value']).flatten()
-        vector_index = vector_index[:len(total_meses)]
+    Nino = pd.to_datetime(meses_nino)
+    Nino_event = pd.DataFrame({'date': Nino, 'event': 'Niño'})
+
+    # Identificar periodos La Niña
+    pos_nina = np.where(vector_index >= umbral_superior)[0]
+    D = np.diff(np.concatenate(([0], np.diff(pos_nina) == 1, [0])))
+    pos_partida = np.where(D == 1)[0]
+    pos_llegada = np.where(D == -1)[0]+1
+    posiciones = np.vstack((pos_partida, pos_llegada))
+    resultado = np.diff(posiciones, axis=0)
+    posiciones_nina = np.where(resultado >= condicion)[1]
+    meses_nina = []
+
+    for i in posiciones_nina:
+        periodos = pos_nina[pos_partida[i]:pos_llegada[i]]
+        meses_nina.extend(total_meses[periodos])
         
-        # Identificar periodos El Niño
-        pos_nino = np.where(vector_index >= umbral_superior)[0]
-        D = np.diff(np.concatenate(([0], np.diff(pos_nino) == 1, [0])))
-        pos_partida = np.where(D == 1)[0]
-        pos_llegada = np.where(D == -1)[0]+1
-        posiciones = np.vstack((pos_partida, pos_llegada))
-        resultado = np.diff(posiciones, axis=0)
-        posiciones_nino = np.where(resultado >= condicion)[1]
-        meses_nino = []
+    Nina = pd.to_datetime(meses_nina)
+    Nina_event = pd.DataFrame({'date': Nina, 'event': 'Niña'})
     
-        for i in posiciones_nino:
-            periodos = pos_nino[pos_partida[i]:pos_llegada[i]]
-            meses_nino.extend(total_meses[periodos])
-            
-        Nino = pd.to_datetime(meses_nino)
-        Nino_event = pd.DataFrame({'date': Nino, 'event': 'Niño'})
+    # Identificar periodos Neutros
+    pos_neutro_1 = np.isin(total_meses, Nino)
+    pos_neutro_2 = np.isin(total_meses, Nina)
+    Neutro = total_meses[~(pos_neutro_1 | pos_neutro_2)]
+
+    Neutro = pd.to_datetime(Neutro)
     
-        # Identificar periodos La Niña
-        pos_nina = np.where(vector_index <= umbral_inferior)[0]
-        D = np.diff(np.concatenate(([0], np.diff(pos_nina) == 1, [0])))
-        pos_partida = np.where(D == 1)[0]  
+    Neutro_event = pd.DataFrame({'date': Neutro, 'event': 'Neutro'})
+
+    return pd.concat([Nino_event, Nina_event, Neutro_event]).sort_values(by='date').reset_index(drop=True)

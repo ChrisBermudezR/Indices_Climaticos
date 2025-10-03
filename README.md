@@ -1,16 +1,20 @@
 # Manejo de los datos de índices Climáticos
 
-para cargar el ambiente de desarrollo se debe usar el siguiente comando:
+El ambiente de desarrollo está creado en conda usando minicoda3.
+
+Para cargar el ambiente de desarrollo se debe usar el siguiente comando:
 
 ```python
-source envUbuntu/bin/activate
+conda activate indices_climaticos
 ```
 
 Para instalar las librerías necesarias usar:
 
 ```python
-pip install requirements.txt
+conda install nombre_del_paquete
 ```
+
+
 
 La fuete de datos de los índices es la siguiente:
 

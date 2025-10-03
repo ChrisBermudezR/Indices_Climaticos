@@ -51,7 +51,7 @@ Fecha de creación:
 """
 
 import pandas as pd
-from eventClassifier import Classifier, columnEvaluation, meiClassifier
+from eventClassifier import Classifier, columnEvaluation, MEIClassifier, SOIClassifier
 
 
 """
@@ -164,26 +164,25 @@ def meiIndex(df):
     df_long['date'] = pd.to_datetime(df_long['date'])
 
     df_long['index_name'] = 'MEI'
-    df_long['index_description'] = 'Índice Multivariado ENOS: v.2 El índice bimensual Multivariado de El Niño/Oscilación del Sur (ENSO) (MEI.v2) es la serie temporal de la principal Función Ortogonal Empírica (EOF, por sus siglas en inglés) combinada de cinco variables diferentes: presión a nivel del mar (SLP), temperatura de la superficie del mar (SST), componentes zonal y meridional del viento en superficie, y radiación de onda larga saliente (OLR) en la cuenca del Pacífico tropical (30°S-30°N y 100°E-70°W) (en NOAA/CPC).'
-    df_long['unit'] = '°C'
+    df_long['index_description'] = 'Índice Multivariado ENOS: v.2 El índice bimensual Multivariado de El Niño/Oscilación del Sur (ENSO) (MEI.v2) es la serie temporal de la principal Función Ortogonal Empírica (EOF, por sus siglas en inglés) combinada de seis variables diferentes: temperatura superficiel, temperatura del aire, presión atmosférica al nivel del mar, nubosidad, componente zonal del viento y componente meridional del viento en la cuenca del Pacífico tropical (30°S-30°N y 100°E-70°W) (en NOAA/CPC https://www.psl.noaa.gov/enso/mei/).'
+    df_long['unit'] = 'dmless'
 
     # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
     df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
-    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque el valor de la media movil bimensual del primer compoennte principal es inferior a -0.5 °C' 
-                                                    if x == 'Fría' else ('Esta fase se caracteriza porque el valor de la media movil bimensual del primer compoennte principal es superior a 0.5 °C' 
-                                                                      if x == 'Cálida'  else 'Esta fase se caracteriza porque el valor de la media movil bimensual del primer compoennte principal es inferior a 0.5 °C y superior a -0.5 °C'))
-
-    # Identificar eventos
-    event_total = meiClassifier(df_long, 5, -0.5, 0.5) # entradas de la función para el evenClassifier
-
-    # Unir los eventos con el DataFrame original
-    df_long = pd.merge(df_long, event_total, on='date')
-
-    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque la fase fría persiste durante al menos 5 meses consecutivos' 
-                                                    if x == 'Niña' else ('Este evento se caracteriza porque la fase cálida persiste durante al menos 5 meses consecutivos' 
-                                                                         if x == 'Niño' else 'Condiciones neutras'))
     
-    df_long = columnEvaluation(df_long, 'event', 'value', 'type')
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza por condiciones oceánicas y atmosféricas cálidas asociadas a El Niño (anomalías positivas del MEI)' 
+                                                    if x == 'Cálida' else ('Esta fase se caracteriza por condiciones frías asociadas a La Niña (anomalías negativas del MEI)' 
+                                                                        if x == 'Fría' else 'Esta fase se caracteriza por condiciones neutrales, sin predominancia de El Niño ni La Niña'))
+    # Identificar eventos
+    df_long = MEIClassifier (df_long) # entradas de la función para el evenClassifier
+
+    
+
+    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque el valor del índice para el mes es igual o inferior al umbral de -0.5' 
+                                                    if x == 'Niña' else ('Este evento se caracteriza porque el valor del índice para el mes es igual o supera el umbral de 0.5' 
+                                                                         if x == 'Niño' else 'Este evento se caracteriza porque el valor del índice para el mes no supera el umbral de 0.5 y no es inferior al umbral de -0.5'))
+    
+    df_long['type'] = 'No aplicable'
    
 
     return df_long
@@ -224,8 +223,8 @@ def nino12Index(df):
 
     # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
     df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
-    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C' 
-                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C' 
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 1+2 son inferiores a -0.5 °C' 
+                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 1+2 son superiores a 0.5 °C' 
                                                                       if x == 'Cálida'  else 'Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C'))
 
     # Identificar eventos
@@ -278,8 +277,8 @@ def nino3Index(df):
 
     # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
     df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
-    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C' 
-                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C' 
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3 son inferiores a -0.5 °C' 
+                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3 son superiores a 0.5 °C' 
                                                                       if x == 'Cálida'  else 'Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C'))
 
     # Identificar eventos
@@ -383,8 +382,8 @@ def nino4Index(df):
 
     # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
     df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
-    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C' 
-                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C' 
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 4 son inferiores a -0.5 °C' 
+                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 4 son superiores a 0.5 °C' 
                                                                       if x == 'Cálida'  else 'Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C'))
 
     # Identificar eventos
@@ -401,3 +400,53 @@ def nino4Index(df):
    
 
     return df_long
+
+
+"""
+ÍNDICE SOI
+
+"""
+
+def soiIndex(df):
+    # Transformar el DataFrame
+    df_long = df.melt(id_vars=['year'], var_name='month', value_name='value')
+    df_long['year'] = df_long['year'].astype(str)
+    #initial_line = pd.DataFrame({'year': ['1949'], 'month': ['12'], 'value': [-0.5]})
+    #df_long = pd.concat([initial_line, df_long], ignore_index=True)
+
+    df_long['day'] = 1
+    df_long['day'] = df_long['day'].astype(str)
+
+    df_long = df_long[df_long['value'] != -99.9]
+    df_long['value'] = df_long['value'].round(1)
+
+    df_long['date'] = pd.to_datetime(df_long[['year', 'month', 'day']])
+    df_long['date'] = df_long['date'].dt.strftime('%Y-%m-%d')
+    df_long = df_long[['date', 'value']]
+    df_long = df_long.sort_values(by='date')
+    df_long['date'] = pd.to_datetime(df_long['date'])
+    
+    df_long['index_name'] = 'SOI'
+    df_long['index_description'] = 'Southern Oscillation Index: El Índice de la Oscilación del Sur es un indicador climático que mide la diferencia de presión atmosférica a nivel del mar entre dos estaciones del Pacífico tropical: Tahití (Polinesia Francesa) y Darwin (Australia). Calculada a partir del ERSST V5 (en NOAA/CPC https://www.psl.noaa.gov/data/timeseries/month/DS/SOI/).'
+    df_long['unit'] = 'dmLess'
+
+    # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
+    df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x > 0 else ('Cálida' if x < 0 else 'Neutra'))
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza por presiones más bajas en Tahití y más altas en Darwin, típicas de El Niño (SOI negativo)' 
+                                                    if x == 'Cálida' else ('Esta fase se caracteriza por presiones más altas en Tahití y más bajas en Darwin, típicas de La Niña (SOI positivo)'       
+                                                                           if x == 'Fría' else 'Esta fase se caracteriza por condiciones neutrales, sin predominancia de El Niño ni La Niña'))
+    # Identificar eventos
+    event_total = SOIClassifier (df_long, 5, -0.7, 0.7) # entradas de la función para el evenClassifier
+
+    # Unir los eventos con el DataFrame original
+    df_long = pd.merge(df_long, event_total, on='date')
+
+    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque el valor del índice para el mes es positivo' 
+                                                    if x == 'Niña' else ('Este evento se caracteriza porque el valor del índice para el mes es negativo' 
+                                                                         if x == 'Niño' else 'Este evento se caracteriza porque el valor del índice para el mes es cero'))
+    
+    df_long['type'] = 'No aplicable'
+   
+
+    return df_long
+
