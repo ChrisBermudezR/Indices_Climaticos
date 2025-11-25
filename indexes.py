@@ -51,7 +51,7 @@ Fecha de creación:
 """
 
 import pandas as pd
-from eventClassifier import Classifier, columnEvaluation, MEIClassifier, SOIClassifier
+from eventClassifier import Classifier, columnEvaluation, MEIClassifier, SOIClassifier, IMTClassifier
 
 
 """
@@ -435,6 +435,70 @@ def soiIndex(df):
     df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza por presiones más bajas en Tahití y más altas en Darwin, típicas de El Niño (SOI negativo)' 
                                                     if x == 'Cálida' else ('Esta fase se caracteriza por presiones más altas en Tahití y más bajas en Darwin, típicas de La Niña (SOI positivo)'       
                                                                            if x == 'Fría' else 'Esta fase se caracteriza por condiciones neutrales, sin predominancia de El Niño ni La Niña'))
+    # Identificar eventos
+    event_total = SOIClassifier (df_long, 5, -0.7, 0.7) # entradas de la función para el evenClassifier
+
+    # Unir los eventos con el DataFrame original
+    df_long = pd.merge(df_long, event_total, on='date')
+
+    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque el valor del índice para el mes es positivo' 
+                                                    if x == 'Niña' else ('Este evento se caracteriza porque el valor del índice para el mes es negativo' 
+                                                                         if x == 'Niño' else 'Este evento se caracteriza porque el valor del índice para el mes es cero'))
+    
+    df_long['type'] = 'No aplicable'
+   
+
+    return df_long
+
+"""
+ÍNDICE IMT
+
+"""
+
+def IMTIndex(df):
+    # Transformar el DataFrame
+    df_long = df.melt(id_vars=['year'], var_name='month', value_name='value')
+    df_long['year'] = df_long['year'].astype(str)
+    #initial_line = pd.DataFrame({'year': ['1949'], 'month': ['12'], 'value': [-0.5]})
+    #df_long = pd.concat([initial_line, df_long], ignore_index=True)
+
+    df_long['day'] = 1
+    df_long['day'] = df_long['day'].astype(str)
+
+    df_long = df_long[df_long['value'] != -99.9]
+    df_long['value'] = df_long['value'].round(1)
+
+    df_long['date'] = pd.to_datetime(df_long[['year', 'month', 'day']])
+    df_long['date'] = df_long['date'].dt.strftime('%Y-%m-%d')
+    df_long = df_long[['date', 'value']]
+    df_long = df_long.sort_values(by='date')
+    df_long['date'] = pd.to_datetime(df_long['date'])
+    
+    df_long['index_name'] = 'IMT'
+    df_long['index_description'] = 'El Índice Multivariado de Tumaco (IMT) es un indicador climático utilizado para monitorear las condiciones oceánicas y atmosféricas en la región del Pacífico colombiano, específicamente en la ensenada de Tumaco. Este índice integra múltiples variables meteorológicas y oceanográficas para evaluar fenómenos como El Niño y La Niña, así como condiciones neutras en la zona. (en DIMAR/CCCP https://cccp.dimar.mil.co/IMT).'
+    df_long['unit'] = 'dmLess'
+
+    # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
+    df_long['phase'] = IMTClassifier(df_long['value'])
+    
+    
+    fase_descripcion = {
+        'C5': 'Fase cálida muy fuerte',
+        'C4': 'Fase cálida muy fuerte',
+        'C3': 'Fase cálida fuerte',
+        'C2': 'Fase cálida moderada',
+        'C1': 'Fase cálida neutra',
+        'F1': 'Fase fría neutra',
+        'F2': 'Fase fría moderada',
+        'F3': 'Fase fría fuerte',
+        'F4': 'Fase fría muy fuerte',
+        'F5': 'Fase fría muy fuerte'
+    }
+
+    
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: fase_descripcion.get(x, 'Fase desconocida'))
+
+
     # Identificar eventos
     event_total = SOIClassifier (df_long, 5, -0.7, 0.7) # entradas de la función para el evenClassifier
 

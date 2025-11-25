@@ -16,7 +16,7 @@ conda install nombre_del_paquete
 
 
 
-La fuete de datos de los índices es la siguiente:
+La fuente de datos de los índices es la siguiente:
 
 https://psl.noaa.gov/data/climateindices/list/
 

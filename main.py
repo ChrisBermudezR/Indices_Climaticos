@@ -46,6 +46,8 @@ nino34_entire_df = pd.read_csv("./data/niño 3+4.csv")
 
 nino4_entire_df = pd.read_csv("./data/niño 4.csv")
 
+#IMT_entire_df = pd.read_csv("./data/IMT.csv")
+
 
 
 # Aplicación de las funciones de organización de la tabla final
@@ -69,6 +71,9 @@ nino34_entire_df_long.dropna(subset=['value'], inplace=True)
 
 nino4_entire_df_long = indexes.nino4Index(nino4_entire_df) ######
 nino4_entire_df_long.dropna(subset=['value'], inplace=True)
+
+#IMT_entire_df_long = indexes.IMTIndex(IMT_entire_df) ######
+#IMT_entire_df_long.dropna(subset=['value'], inplace=True)
 
 tabla_total = pd.concat([
                             oni_entire_df_long, 
