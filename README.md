@@ -2,11 +2,6 @@
 
 El ambiente de desarrollo está creado en conda usando minicoda3.
 
-Para cargar el ambiente de desarrollo se debe usar el siguiente comando:
-
-```python
-conda activate indices_climaticos
-```
 
 Para instalar las librerías necesarias usar:
 
@@ -19,4 +14,20 @@ conda install nombre_del_paquete
 La fuente de datos de los índices es la siguiente:
 
 https://psl.noaa.gov/data/climateindices/list/
+
+```
+Indices_Climaticos/
+├─ procces.py
+├─ data/
+├─ IMT/
+├─ outputs/
+├─ scripts/
+└─ modules/
+   ├─ __init__.py
+   └─ convertirCSV.py
+   └─ eventClassifier.py
+   └─ indexes.py
+
+
+```
 

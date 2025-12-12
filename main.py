@@ -16,35 +16,43 @@ Librerías requeridas:
 -  `pandas >= 1.2`).
 
 Notas:
-- Este script sólo está diseñado para el índice ONI y el índice IMT
+- Este script sólo está diseñado para los índices de la NOAA relacionados con el ENSO.
 """
 # Importar las librerías
 import pandas as pd
 import openpyxl
+import importlib
 # from eventClassifier import oniClassifier #Módulo de clasificación de eventos para cada indice
-import indexes 
+import modules.indexes as indexes 
+import modules.convertirCSV as convertirCSV
+
+from modules import eventClassifier 
+from modules import indexes 
+
+importlib.reload(eventClassifier)
+importlib.reload(indexes)
 
 print("inicio procesamiento")
+
+# Ruta de la carpeta que contiene los archivos
+
+convertirCSV.dataprocesser('./data')
+
+
 # Lectura del archivo de datos de los índices posterior a la estructuración
-oni_entire_df = pd.read_csv("./data/oni_entire.csv")
+oni_entire_df = pd.read_csv("./data/processed/oni.csv", skiprows=[1])
 
+mei_entire_df = pd.read_csv("./data/processed/meiv2.csv", skiprows=[1])
 
-mei_entire_df = pd.read_csv("./data/mei_entire.csv")
+soi_entire_df = pd.read_csv("./data/processed/soi.csv", skiprows=[1])
 
+nino12_entire_df = pd.read_csv("./data/processed/nina1.csv", skiprows=[1])
 
-soi_entire_df = pd.read_csv("./data/soi.csv")
+nino3_entire_df = pd.read_csv("./data/processed/nina3.csv", skiprows=[1])
 
+nino34_entire_df = pd.read_csv("./data/processed/nina34.csv", skiprows=[1])
 
-nino12_entire_df = pd.read_csv("./data/niño 1+2.csv")
-
-
-nino3_entire_df = pd.read_csv("./data/niño 3.csv")
-
-
-nino34_entire_df = pd.read_csv("./data/niño 3+4.csv")
-
-
-nino4_entire_df = pd.read_csv("./data/niño 4.csv")
+nino4_entire_df = pd.read_csv("./data/processed/nina4.csv", skiprows=[1])
 
 #IMT_entire_df = pd.read_csv("./data/IMT.csv")
 
@@ -90,3 +98,4 @@ tabla_total = pd.concat([
 print("exportando los datos")
 tabla_total.to_excel("Indices_Total.xlsx", sheet_name="indices", index=False)
 tabla_total.to_csv("Indices_Total.csv", index=False)
+

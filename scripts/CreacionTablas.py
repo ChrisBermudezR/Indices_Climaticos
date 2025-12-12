@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 @author: Christian Bermúdez-Rivas
- 
 Nombre del script: CreacionTablas.py
 Fecha de creación: Created on Fri Nov  1 16:00:24 2024
-Descripción: Este script tiene como propósito realizar el ETL de los índices climáticos para estudiar el ENSO
+Descripción: Este script tiene como propósito realizar el ETL de los índices 
+climáticos para estudiar el ENSO
 Versión: 1.0 
-
 Parámetros de entrada:
 - archivo .csv con los datos de cada índice
 
@@ -19,45 +18,30 @@ Librerías requeridas:
 Notas:
 - Este script sólo está diseñado para el índice ONI y el índice IMT
 """
-#Importar las librerías
+# Importar las librerías
 import pandas as pd
-#from eventClassifier import oniClassifier #Módulo de clasificación de eventos para cada indice
-from modules.indexes import oniIndex, meiIndex, ninoIndex
+# from eventClassifier import oniClassifier #Módulo de clasificación de eventos para cada indice
+from modules.indexes import oniIndex
 
-
-#Lectura del archivo de datos de los índices posterior a la estructuración
-oni_entire_df=pd.read_csv(".\data\oni_entire.csv")
-
-
-
-
-oni_entire_df_long = oniIndex(oni_entire_df)
-mei_entire_df_long = meiIndex(mei_entire_df)
-nino12_df_long = ninoIndex(nino12_df, 'Nino1+2')
-nino3_df_long = ninoIndex(nino3_df, 'Nino3')
-nino34_df_long = ninoIndex(nino34_df, 'Nino3.4')
-nino4_df_long = ninoIndex(nino4_df, 'Nino4')
-
-
-
+# Lectura del archivo de datos de los índices posterior a la estructuración
+oni_entire_df = pd.read_csv(".\data\oni_entire.csv")
+# Aplicación de las funciones de organización de la tabla final
+oni_entire_df_long = oniIndex(oni_entire_df) ######
+# Exportación de l atabla final a csv y xlsx
+oni_entire_df_long.to_excel("Indices_Total.xlsx", index=False, encoding='utf-8-sig')
+oni_entire_df_long.to_csv("Indices_Total.csv", index=False, encoding='utf-8-sig')
 
 # Lista de DataFrames
-dataframes = [oni_entire_df_long, 
-              mei_entire_df_long, 
-              nino12_df_long,
-              nino3_df_long,
-              nino34_df_long,
-              nino4_df_long
-              ]
+dataframes = [oni_entire_df_long]
+            
+ 
 
 # Concatenar por filas
 df_long = pd.concat(dataframes, axis=0)
 
-df_long.to_csv("Indices_Total.csv", index=False, encoding='utf-8-sig')
 
 
-
-
+df_long = pd.read_excel("Indices_Total_Manual.xlsx")
 
 
 ####Normalizacion
@@ -76,6 +60,8 @@ dates = df_long[['date']].drop_duplicates()
 dates['id'] = range(1, len(dates) + 1)
 dates=dates[['id', 'date']]
 
+"""
+REVISAR LA lÖGICA DE ESTO QUE HA CAMBIADO LA RELACIÖN EN EL MODELO E-R
 #phase
 phases =  df_long[['phase', 'phase_description', 'event']]
 phases = pd.merge(phases, events, on='event', how='left')
@@ -84,6 +70,8 @@ phases = phases[['phase', 'phase_description', 'id']]
 phases = phases.rename(columns = {'id': 'id_event'})
 phases['id'] = range(1, len(phases) + 1)
 phases=phases[['id', 'phase', 'phase_description', 'id_event']]
+"""
+
 
 #indexes
 indexes = df_long[['index_name', 'index_description', 'unit']]
