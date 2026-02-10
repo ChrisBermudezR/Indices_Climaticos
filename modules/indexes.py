@@ -108,7 +108,7 @@ def oniIndex(df):
     df_long['date'] = pd.to_datetime(df_long['date'])
 
     df_long['index_name'] = 'ONI'
-    df_long['index_description'] = 'Índice Niño Oceánico: Media móvil de 3 meses de las anomalías de la TSM ERSST.v5 en la región Niño 3.4 (5°N-5°S, 120°-170°W) Calculada a partir del ERSST V5 (en NOAA/CPC).'
+    df_long['index_description'] = 'Índice Oceánico El Niño : Media móvil de 3 meses de las anomalías de la TSM ERSST.v5 en la región Niño 3.4 (5°N-5°S, 120°-170°W) Calculada a partir del ERSST V5 (en NOAA/CPC).'
     df_long['unit'] = '°C'
 
     # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
@@ -513,4 +513,64 @@ def IMTIndex(df):
    
 
     return df_long
+
+
+"""
+ÍNDICE RONI
+
+Warm (red) and cold (blue) periods based on a threshold of +/- 0.5°C for the Relative Oceanic Niño Index (RONI), 
+using the 1991–2020 base period [3 month running mean of ERSST.v5 SST anomalies in the Niño 3.4 region (5°N–5°S, 120°–170°W) 
+with average tropical mean (20°N–20°S) SST anomalies subtracted. The difference is then adjusted so the variance equals the 
+original Niño 3.4 index].
+
+For historical purposes, periods of below and above normal SSTs are colored in blue and red when the threshold is met 
+for a minimum of five (5) consecutive overlapping seasons. The RONI is one measure of the El Niño Southern Oscillation, 
+and other indices can confirm whether features consistent with a coupled ocean-atmosphere phenomenon accompanied these periods.
+
+"""
+
+def roniIndex(df):
+    # Transformar el DataFrame
+    df_long = df.melt(id_vars=['year'], var_name='month', value_name='value')
+    df_long['year'] = df_long['year'].astype(str)
+    #initial_line = pd.DataFrame({'year': ['1949'], 'month': ['12'], 'value': [-0.5]})
+    #df_long = pd.concat([initial_line, df_long], ignore_index=True)
+
+    df_long['day'] = 1
+    df_long['day'] = df_long['day'].astype(str)
+
+    df_long = df_long[df_long['value'] != -99.9]
+    df_long['value'] = df_long['value'].round(1)
+
+    df_long['date'] = pd.to_datetime(df_long[['year', 'month', 'day']])
+    df_long['date'] = df_long['date'].dt.strftime('%Y-%m-%d')
+    df_long = df_long[['date', 'value']]
+    df_long = df_long.sort_values(by='date')
+    df_long['date'] = pd.to_datetime(df_long['date'])
+
+    df_long['index_name'] = 'RONI'
+    df_long['index_description'] = 'Índice Oceánico Relativo El Niño  : Media móvil de 3 meses de las anomalías de la TSM ERSST.v5 calculadas usando el período base 1991–2020 [promedio móvil de 3 meses de las anomalías de la temperatura superficial del mar (SST) ERSST.v5 en la región Niño 3.4 (5°N - 5°S, 120° - 170°O), con las anomalías promedio de SST de los trópicos (20°N - 20°S) restadas. Luego, la diferencia se ajusta para que la varianza sea igual a la del índice original de Niño 3.4] (en NOAA/CPC).'
+    df_long['unit'] = '°C'
+
+    # Crear una nueva columna 'Phase' con condiciones basadas en los valores de 'value'
+    df_long['phase'] = df_long['value'].apply(lambda x: 'Fría' if x <= -0.5 else ('Cálida' if x >= 0.5 else 'Neutra'))
+    df_long['phase_description'] = df_long['phase'].apply(lambda x: 'Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son inferiores a -0.5 °C' 
+                                                    if x == 'Fría' else ('Esta fase se caracteriza porque las anomalías de TSM en la región 3.4 son superiores a 0.5 °C' 
+                                                                      if x == 'Cálida'  else 'Esta fase se caracteriza porque las anomalías de TSM son inferiores a 0.5 °C y superiores a -0.5 °C'))
+
+    # Identificar eventos
+    event_total = Classifier(df_long, 5, -0.5, 0.5) # entradas de la función para el evenClassifier
+
+    # Unir los eventos con el DataFrame original
+    df_long = pd.merge(df_long, event_total, on='date')
+
+    df_long['event_description'] = df_long['event'].apply(lambda x: 'Este evento se caracteriza porque la fase fría persiste durante al menos 5 meses consecutivos' 
+                                                    if x == 'Niña' else ('Este evento se caracteriza porque la fase cálida persiste durante al menos 5 meses consecutivos' 
+                                                                         if x == 'Niño' else 'Condiciones neutras'))
+    
+    df_long = columnEvaluation(df_long, 'event', 'value', 'type')
+   
+
+    return df_long
+
 

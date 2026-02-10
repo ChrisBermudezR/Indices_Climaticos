@@ -28,6 +28,7 @@ import modules.convertirCSV as convertirCSV
 
 from modules import eventClassifier 
 from modules import indexes 
+from modules import LongtoWide
 
 importlib.reload(eventClassifier)
 importlib.reload(indexes)
@@ -37,6 +38,7 @@ print("inicio procesamiento")
 # Ruta de la carpeta que contiene los archivos
 
 convertirCSV.dataprocesser('./data')
+LongtoWide.longtowide('./data/raw/RONI/RONI.ascii.txt')
 
 
 # Lectura del archivo de datos de los índices posterior a la estructuración
@@ -53,6 +55,8 @@ nino3_entire_df = pd.read_csv("./data/processed/nina3.csv", skiprows=[1])
 nino34_entire_df = pd.read_csv("./data/processed/nina34.csv", skiprows=[1])
 
 nino4_entire_df = pd.read_csv("./data/processed/nina4.csv", skiprows=[1])
+
+roni_entire_df = pd.read_csv("./data/processed/roni.csv")
 
 #IMT_entire_df = pd.read_csv("./data/IMT.csv")
 
@@ -80,6 +84,9 @@ nino34_entire_df_long.dropna(subset=['value'], inplace=True)
 nino4_entire_df_long = indexes.nino4Index(nino4_entire_df) ######
 nino4_entire_df_long.dropna(subset=['value'], inplace=True)
 
+roni_entire_df_long = indexes.roniIndex(roni_entire_df) ######
+roni_entire_df_long.dropna(subset=['value'], inplace=True)
+
 #IMT_entire_df_long = indexes.IMTIndex(IMT_entire_df) ######
 #IMT_entire_df_long.dropna(subset=['value'], inplace=True)
 
@@ -90,7 +97,8 @@ tabla_total = pd.concat([
                             nino34_entire_df_long,
                             nino4_entire_df_long,
                             soi_entire_df_df_long,
-                            mei_entire_df_long                         
+                            mei_entire_df_long,
+                            roni_entire_df_long                         
                          ], axis=0)
 
 

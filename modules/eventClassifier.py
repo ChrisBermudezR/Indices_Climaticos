@@ -55,75 +55,75 @@ Fecha de creación:
 1 de noviembre de 2024
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 def Classifier(data, condicion, umbral_inferior, umbral_superior):
-    
     """
     Clasifica eventos climáticos (El Niño, La Niña y Neutro) basados en el índice ONI.
-
-    Args:
-        data (pd.DataFrame): DataFrame con las columnas 'date' (fechas) y 'value' (índices ONI).
-        condicion (int): Número mínimo de meses consecutivos para definir un evento.
-        umbral_inferior (float): Umbral inferior para La Niña.
-        umbral_superior (float): Umbral superior para El Niño.
-
-    Returns:
-        pd.DataFrame: DataFrame con eventos clasificados por fecha y tipo ('Niño', 'Niña', 'Neutro').
+    data: DataFrame con columnas 'date' (datetime) y 'value' (float, ONI 3m).
     """
-   
-    anio_inicio = 1950
-    anio_fin = data['date'].iloc[-1].year
-    final_month = data['date'].iloc[-1].month
-    total_meses = pd.date_range(start=f'{anio_inicio}-01-01', end=f'{anio_fin}-{final_month}-01', freq='MS')
-    vector_index = np.array(data['value']).flatten()
-    vector_index = vector_index[:len(total_meses)]
-    
-    # Identificar periodos El Niño
-    pos_nino = np.where(vector_index >= umbral_superior)[0]
-    D = np.diff(np.concatenate(([0], np.diff(pos_nino) == 1, [0])))
-    pos_partida = np.where(D == 1)[0]
-    pos_llegada = np.where(D == -1)[0]+1
-    posiciones = np.vstack((pos_partida, pos_llegada))
-    resultado = np.diff(posiciones, axis=0)
-    posiciones_nino = np.where(resultado >= condicion)[1]
-    meses_nino = []
 
-    for i in posiciones_nino:
-        periodos = pos_nino[pos_partida[i]:pos_llegada[i]]
-        meses_nino.extend(total_meses[periodos])
-        
-    Nino = pd.to_datetime(meses_nino)
+    # --- 1) Asegurar orden y fechas mensuales alineadas a inicio de mes ---
+    df = data[['date', 'value']].copy()
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    df = df.dropna(subset=['date']).sort_values('date').reset_index(drop=True)
+
+    # Normaliza a mes-inicio para evitar desfases al hacer join/merge
+    total_meses = df['date'].dt.to_period('M').dt.to_timestamp()  # p.ej. 2024-05-01
+    vector_index = df['value'].to_numpy().flatten()               # mismo largo que total_meses
+
+    # --- 2) Identificar periodos El Niño (>= umbral_superior) ---
+    pos_nino = np.where(vector_index >= umbral_superior)[0]
+    if pos_nino.size > 0:
+        D = np.diff(np.concatenate(([0], (np.diff(pos_nino) == 1).astype(int), [0])))
+        pos_partida = np.where(D == 1)[0]
+        pos_llegada = np.where(D == -1)[0] + 1
+        posiciones = np.vstack((pos_partida, pos_llegada))
+        resultado = np.diff(posiciones, axis=0)
+        posiciones_nino = np.where(resultado >= condicion)[1]
+        meses_nino = []
+        for i in posiciones_nino:
+            periodos = pos_nino[pos_partida[i]:pos_llegada[i]]
+            meses_nino.extend(total_meses.iloc[periodos])
+        Nino = pd.to_datetime(meses_nino)
+    else:
+        Nino = pd.to_datetime([])
+
     Nino_event = pd.DataFrame({'date': Nino, 'event': 'Niño'})
 
-    # Identificar periodos La Niña
+    # --- 3) Identificar periodos La Niña (<= umbral_inferior) ---
     pos_nina = np.where(vector_index <= umbral_inferior)[0]
-    D = np.diff(np.concatenate(([0], np.diff(pos_nina) == 1, [0])))
-    pos_partida = np.where(D == 1)[0]
-    pos_llegada = np.where(D == -1)[0]+1
-    posiciones = np.vstack((pos_partida, pos_llegada))
-    resultado = np.diff(posiciones, axis=0)
-    posiciones_nina = np.where(resultado >= condicion)[1]
-    meses_nina = []
+    if pos_nina.size > 0:
+        D = np.diff(np.concatenate(([0], (np.diff(pos_nina) == 1).astype(int), [0])))
+        pos_partida = np.where(D == 1)[0]
+        pos_llegada = np.where(D == -1)[0] + 1
+        posiciones = np.vstack((pos_partida, pos_llegada))
+        resultado = np.diff(posiciones, axis=0)
+        posiciones_nina = np.where(resultado >= condicion)[1]
+        meses_nina = []
+        for i in posiciones_nina:
+            periodos = pos_nina[pos_partida[i]:pos_llegada[i]]
+            meses_nina.extend(total_meses.iloc[periodos])
+        Nina = pd.to_datetime(meses_nina)
+    else:
+        Nina = pd.to_datetime([])
 
-    for i in posiciones_nina:
-        periodos = pos_nina[pos_partida[i]:pos_llegada[i]]
-        meses_nina.extend(total_meses[periodos])
-        
-    Nina = pd.to_datetime(meses_nina)
     Nina_event = pd.DataFrame({'date': Nina, 'event': 'Niña'})
-    
-    # Identificar periodos Neutros
-    pos_neutro_1 = np.isin(total_meses, Nino)
-    pos_neutro_2 = np.isin(total_meses, Nina)
-    Neutro = total_meses[~(pos_neutro_1 | pos_neutro_2)]
 
-    Neutro = pd.to_datetime(Neutro)
-    
+    # --- 4) Neutro: todo lo demás (sobre las MISMAS fechas de tu data) ---
+    en_nino = np.isin(total_meses, Nino)
+    en_nina = np.isin(total_meses, Nina)
+    Neutro = pd.to_datetime(total_meses[~(en_nino | en_nina)])
     Neutro_event = pd.DataFrame({'date': Neutro, 'event': 'Neutro'})
 
-    return pd.concat([Nino_event, Nina_event, Neutro_event]).sort_values(by='date').reset_index(drop=True)
+    # --- 5) Salida ordenada ---
+    out = (pd.concat([Nino_event, Nina_event, Neutro_event], ignore_index=True)
+             .drop_duplicates(subset=['date', 'event'])
+             .sort_values('date')
+             .reset_index(drop=True))
+
+    return out
 
 def typeClassifier(x):
     

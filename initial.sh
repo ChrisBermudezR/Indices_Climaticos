@@ -7,6 +7,7 @@ mkdir -p ./data
 # Download necessary data files
 echo 'Inicializando entorno...'
 echo 'Descargando datos...'
+curl https://www.cpc.ncep.noaa.gov/data/indices/RONI.ascii.txt > ./data/raw/RONI/RONI.ascii.txt
 curl https://psl.noaa.gov/data/correlation/oni.data > ./data/raw/oni.data
 curl https://psl.noaa.gov/enso/mei/data/meiv2.data > ./data/raw/meiv2.data
 curl https://psl.noaa.gov/data/correlation/nina1.anom.data > ./data/raw/nina1.data
